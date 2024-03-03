@@ -8,8 +8,8 @@ import boto3
 
 # Tạo một session với AWS
 session = boto3.Session(
-    aws_access_key_id='AKIA3FLD3O7TZ4DAZ5VR',
-    aws_secret_access_key='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',
+    aws_access_key_id='***********',
+    aws_secret_access_key='*******************************',
     region_name='us-east-1'
 )
 # Khởi tạo một client của AWS S3

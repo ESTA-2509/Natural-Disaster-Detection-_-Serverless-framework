@@ -1,35 +1,23 @@
 service: myserverlessproject
 app: myserverlessproject
-org: hungngo22
+# org: hungngo22
 useDotenv: true
 frameworkVersion: "3"
 
 provider:
   name: aws
   profile: serverlessUser
-  # runtime: docker
-  # image: public.ecr.aws/767397951463.dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest
   ecr:
     images:
       # Replace with your actual Docker image URI and tag
       appimage:
-        uri: 767397951463.dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest
-
-# functions:
-#   predict:
-#     handler: handler.main
-#     events:
-#       - s3:
-#           bucket: myserverlessproject-serverlessdeploymentbucket
-#           event: s3:ObjectCreated:*
-#           rules:
-#             - prefix: disasters/
+        uri: [ID_AWSUSER].dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest
 
 functions:
   myserverlessproject:
     # handler: handler.main
     image:
-      uri: 767397951463.dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest  # If image is in ECR
+      uri: [ID_AWSUSER].dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest  # If image is in ECR
     timeout: 900
     memorySize: 2048
     events:
@@ -39,9 +27,4 @@ functions:
           rules:
             - prefix: disasters/
 
-# custom:
-#   pythonRequirements:
-#     dockerizePip: true
-#     dockerFile: ./Dockerfile
-# plugins:
-#   - serverless-python-requirements
+
