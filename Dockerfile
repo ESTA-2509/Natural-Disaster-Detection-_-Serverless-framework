@@ -3,21 +3,23 @@
 ###########
 FROM public.ecr.aws/lambda/python:3.10 as builder
 
-RUN pip install --upgrade pip
-RUN pip install opencv-python-headless --target "${LAMBDA_TASK_ROOT}"
-COPY requirements.txt .
-RUN pip install -r requirements.txt --target "${LAMBDA_TASK_ROOT}"
+RUN pip3 install --upgrade pip
 
-COPY natural_disaster.model /var/task
-
+RUN pip3 install opencv-python --target "${LAMBDA_TASK_ROOT}"
+RUN pip3 install tensorflow --target "${LAMBDA_TASK_ROOT}"
+RUN pip3 install boto3 --target "${LAMBDA_TASK_ROOT}"
+COPY natural_disaster.model  .
+COPY handler.py .
 #########
 # FINAL #
 #########
-FROM public.ecr.aws/lambda/python:3.10
-RUN pip install --upgrade pip
+# Work in the application directory
 
+FROM public.ecr.aws/lambda/python:3.10
+RUN pip3 install --upgrade pip
+RUN yum update -y && yum install -y mesa-libGL-devel
 COPY --from=builder ${LAMBDA_TASK_ROOT} ${LAMBDA_TASK_ROOT}
 
 COPY . ${LAMBDA_TASK_ROOT}
-
+WORKDIR ${LAMBDA_TASK_ROOT}
 CMD [ "handler.main" ]
