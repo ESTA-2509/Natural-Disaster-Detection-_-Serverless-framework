@@ -8,7 +8,7 @@ RUN pip3 install --upgrade pip
 RUN pip3 install opencv-python --target "${LAMBDA_TASK_ROOT}"
 RUN pip3 install tensorflow --target "${LAMBDA_TASK_ROOT}"
 RUN pip3 install boto3 --target "${LAMBDA_TASK_ROOT}"
-COPY natural_disaster.model  .
+# COPY natural_disaster.model  .
 COPY handler.py .
 #########
 # FINAL #
@@ -20,6 +20,7 @@ RUN pip3 install --upgrade pip
 RUN yum update -y && yum install -y mesa-libGL-devel
 COPY --from=builder ${LAMBDA_TASK_ROOT} ${LAMBDA_TASK_ROOT}
 
+COPY natural_disaster.keras /tmp/
 COPY . ${LAMBDA_TASK_ROOT}
 WORKDIR ${LAMBDA_TASK_ROOT}
 CMD [ "handler.main" ]

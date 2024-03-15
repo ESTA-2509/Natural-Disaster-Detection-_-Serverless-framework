@@ -4,25 +4,31 @@ app: myserverlessproject
 useDotenv: true
 frameworkVersion: "3"
 
+plugins:
+  - serverless-better-credentials
+  - serverless-dotenv-plugin
+
 provider:
   name: aws
-  profile: serverlessUser
+  profile: ${env:PROFILE_NAME}
   ecr:
     images:
-      # Replace with your actual Docker image URI and tag
       appimage:
-        uri: [ID_AWSUSER].dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest
+        path: ./
+  s3:
+    bucketOne:
+      name: ${env:BUCKET_NAME}
 
 functions:
   myserverlessproject:
     # handler: handler.main
     image:
-      uri: [ID_AWSUSER].dkr.ecr.us-east-1.amazonaws.com/natural-disaster-image:latest  # If image is in ECR
+      name: appimage
     timeout: 900
     memorySize: 2048
     events:
       - s3:
-          bucket: myserverlessproject-serverlessdeploymentbucket
+          bucket: ${env:BUCKET_NAME}
           event: s3:ObjectCreated:*
           rules:
             - prefix: disasters/

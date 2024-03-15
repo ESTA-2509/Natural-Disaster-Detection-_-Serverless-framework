@@ -8,17 +8,16 @@ import boto3
 
 # Tạo một session với AWS
 session = boto3.Session(
-    aws_access_key_id='***********',
-    aws_secret_access_key='*******************************',
-    region_name='us-east-1'
-)
+    os.environ['AWS_ACCESS_KEY_ID'], 
+    os.environ['AWS_SECRET_ACCESS_KEY'], 
+    os.environ['AWS_REGION'])
 # Khởi tạo một client của AWS S3
 s3 = session.client('s3')
 
 # Tên bucket và đường dẫn đến file ảnh trên bucket
-bucket_name = 'myserverlessproject-serverlessdeploymentbucket'
+bucket_name = os.environ['BUCKET_NAME']
 # Đường dẫn đến thư mục chứa model
-MODEL_DIR = "/var/task/natural_disaster.model"
+MODEL_DIR = "/tmp/natural_disaster.keras"
 
 # load the trained model from disk
 print("[INFO] loading model and label binarizer...")
@@ -49,7 +48,7 @@ def predict(image):
 def main(event, context):
     # Your code here
     print("Processing S3 event:", event)
-    # bucket_name = event['Records'][0]['s3']['bucket']['name']
+    bucket_name = event['Records'][0]['s3']['bucket']['name']
     object_key = event['Records'][0]['s3']['object']['key']
     
     # Example usage of predict function
