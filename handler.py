@@ -8,16 +8,19 @@ import boto3
 
 # Tạo một session với AWS
 session = boto3.Session(
-    os.environ['AWS_ACCESS_KEY_ID'], 
-    os.environ['AWS_SECRET_ACCESS_KEY'], 
-    os.environ['AWS_REGION'])
+    aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], 
+    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'], 
+    aws_session_token=os.environ['AWS_SESSION_TOKEN'],
+    region_name='us-east-1')
 # Khởi tạo một client của AWS S3
 s3 = session.client('s3')
 
 # Tên bucket và đường dẫn đến file ảnh trên bucket
+os.system('cp /var/task/natural_disaster.h5 /tmp/natural_disaster.h5')
+
 bucket_name = os.environ['BUCKET_NAME']
 # Đường dẫn đến thư mục chứa model
-MODEL_DIR = "/tmp/natural_disaster.keras"
+MODEL_DIR = "/tmp/natural_disaster.h5"
 
 # load the trained model from disk
 print("[INFO] loading model and label binarizer...")
