@@ -8,43 +8,108 @@ plugins:
   - serverless-better-credentials
   - serverless-dotenv-plugin
 
+custom:
+  tableName: ${env:TABLE_NAME}
+  bucketName: ${env:BUCKET_NAME}
+
 provider:
   name: aws
   profile: ${env:PROFILE_NAME}
-  iam:
-    role:
-      statements:
-        # Allow functions to list all buckets
-        - Effect: Allow
-          Action: 's3:ListBucket'
-          Resource: '*'
-        # Allow functions to read/write objects in a bucket
-        - Effect: Allow
-          Action:
-            - 's3:GetObject'
-            - 's3:PutObject'
-          Resource:
-            - 'arn:aws:s3:::${env:BUCKET_NAME}/disasters/*'
+  runtime: python3.10
+  iamRoleStatements:
+    # Allow functions to list all buckets
+    - Effect: Allow
+      Action: 's3:ListBucket'
+      Resource: '*'
+    # Allow functions to read/write objects in a bucket
+    - Effect: Allow
+      Action:
+        - 's3:GetObject'
+        - 's3:PutObject'
+      Resource:
+        - 'arn:aws:s3:::${self:custom.bucketName}/uploads/*'
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource:
+        "Fn::GetAtt":
+            - KeyValuesDynamoDBTable
+            - Arn
   ecr:
     images:
       appimage:
         path: ./
   s3:
-    bucketOne:
-      name: ${env:BUCKET_NAME}
+    publicBucket:
+      name: ${self:custom.bucketName}
+      publicAccessBlockConfiguration:
+        BlockPublicAcls: false
+      websiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      versioningConfiguration:
+        Status: Enabled
 
 functions:
+  # upload image to the system
+  upload:
+    handler: api.upload
+    events:
+      - http:
+          path: /
+          method: POST
+
+  # predict class of image
   predict:
-    # handler: handler.main
     image:
       name: appimage
     timeout: 900
     memorySize: 2048
     events:
       - s3:
-          bucket: ${env:BUCKET_NAME}
+          bucket: ${self:custom.bucketName}
           event: s3:ObjectCreated:*
           rules:
-            - prefix: disasters/
+            - prefix: uploads/
 
+  # predict:
+  #   handler: api.predict
+  #   timeout: 900
+  #   memorySize: 2048
+  #   events:
+  #     - s3:
+  #         bucket: ${self:custom.bucketName}
+  #         event: s3:ObjectCreated:*
+  #         rules:
+  #           - prefix: uploads/
 
+  # list all uploaded images
+  list:
+    handler: api.list
+    events:
+      - http:
+          path: /
+          method: GET
+
+resources:
+  Resources:
+    KeyValuesDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES

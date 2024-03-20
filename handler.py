@@ -1,10 +1,15 @@
 import os
 import cv2
+import time
+import json
+import uuid
 import requests
 from tensorflow import keras
 from keras.models import load_model
 import numpy as np
 import boto3
+
+table = os.environ['TABLE_NAME']
 
 # Tạo một session với AWS
 session = boto3.Session(
@@ -14,6 +19,7 @@ session = boto3.Session(
     region_name=os.environ['AWS_REGION'])
 # Khởi tạo một client của AWS S3
 s3 = session.client('s3')
+dynamodb = session.client('dynamodb')
 
 # Tên bucket và đường dẫn đến file ảnh trên bucket
 os.system('cp /var/task/natural_disaster.h5 /tmp/natural_disaster.h5')
@@ -74,6 +80,37 @@ def main(event, context):
 
     except Exception as e:
         print("Error:", e)
+        return
+
+    timestamp = str(time.time())
+
+    item = {
+        'id': {
+        'S': str(uuid.uuid1())
+        },
+        'bucket': {
+        'S': bucket_name
+        },
+        'region': {
+        'S': os.environ['AWS_REGION']
+        },
+        'object': {
+        'S': object_key
+        },
+        'kind': {
+        'S': prediction
+        },
+        'created': {
+        'S': timestamp
+        },
+        'updated': {
+        'S': timestamp
+        }
+    }
+
+    response = dynamodb.put_item(TableName=table, Item=item)
+
+    print(response)
 
     return {
         'statusCode': 200,
