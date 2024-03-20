@@ -11,7 +11,7 @@ session = boto3.Session(
     aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'], 
     aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'], 
     aws_session_token=os.environ['AWS_SESSION_TOKEN'],
-    region_name='us-east-1')
+    region_name=os.environ['AWS_REGION'])
 # Khởi tạo một client của AWS S3
 s3 = session.client('s3')
 
@@ -55,7 +55,7 @@ def main(event, context):
     object_key = event['Records'][0]['s3']['object']['key']
     
     # Example usage of predict function
-    image_path = "https://myserverlessproject-serverlessdeploymentbucket.s3.amazonaws.com/" + object_key
+    image_path = "https://" + bucket_name + ".s3.amazonaws.com/" + object_key
     print("Image path: " + image_path)
     # Tải file ảnh từ bucket
     try:

@@ -1,5 +1,5 @@
-service: myserverlessproject
-app: myserverlessproject
+service: classification
+app: classification
 # org: hungngo22
 useDotenv: true
 frameworkVersion: "3"
@@ -34,7 +34,7 @@ provider:
       name: ${env:BUCKET_NAME}
 
 functions:
-  myserverlessproject:
+  predict:
     # handler: handler.main
     image:
       name: appimage
