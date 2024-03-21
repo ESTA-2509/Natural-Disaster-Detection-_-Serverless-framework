@@ -21,6 +21,7 @@ s3 = session.client('s3')
 dynamodb = session.client('dynamodb')
 
 def upload(event, context):
+  bucket_name = bucket + '-' + region
   try:
     data = json.loads(event['body'])
     if not 'name' in data:
@@ -35,7 +36,7 @@ def upload(event, context):
 
   response = s3.generate_presigned_url('put_object',
     Params={
-      'Bucket': bucket,
+      'Bucket': bucket_name,
       'Key': data['name']
     },
     ExpiresIn=3600
@@ -47,6 +48,11 @@ def upload(event, context):
   }
 
 def predict(event, context):
+  print('The event:', event)
+  if 's3-replication' in event['Records'][0]['userIdentity']['principalId']:
+    print('ignore predict because of replication')
+    return
+  
   bucket_name = event['Records'][0]['s3']['bucket']['name']
   object_key = event['Records'][0]['s3']['object']['key']
 

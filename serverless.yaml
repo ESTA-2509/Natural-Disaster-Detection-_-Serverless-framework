@@ -7,51 +7,77 @@ frameworkVersion: "3"
 plugins:
   - serverless-better-credentials
   - serverless-dotenv-plugin
+  - serverless-s3-replication-plugin
+  - serverless-domain-manager
+  - serverless-create-global-dynamodb-table
 
 custom:
   tableName: ${env:TABLE_NAME}
-  bucketName: ${env:BUCKET_NAME}
+  bucketName: ${env:BUCKET_NAME}-${opt:region}
+  s3ReplicationPlugin:
+    bidirectionalReplicationBuckets:
+      - us-east-1: ${env:BUCKET_NAME}-us-east-1
+      - ap-southeast-1: ${env:BUCKET_NAME}-ap-southeast-1
+    replicationRolePrefixOverride: ${env:BUCKET_NAME}
+  customDomain:
+    domainName: disaster-${opt:region}.thienlinh.link
+    endpointType: 'regional'
+    certificateRegion: ${opt:region}
+    createRoute53Record: true
+  s3Sync:
+    - bucketName: ${self:custom.bucketName}
+      localDir: dashboard/dist
+  globalTables:
+    regions:
+      - us-east-1
+      - ap-southeast-1
 
 provider:
   name: aws
   profile: ${env:PROFILE_NAME}
+  region: ${opt:region}
+  endpointType: regional
   runtime: python3.10
-  iamRoleStatements:
-    # Allow functions to list all buckets
-    - Effect: Allow
-      Action: 's3:ListBucket'
-      Resource: '*'
-    # Allow functions to read/write objects in a bucket
-    - Effect: Allow
-      Action:
-        - 's3:GetObject'
-        - 's3:PutObject'
-      Resource:
-        - 'arn:aws:s3:::${self:custom.bucketName}/uploads/*'
-    - Effect: "Allow"
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-      Resource:
-        "Fn::GetAtt":
-            - KeyValuesDynamoDBTable
-            - Arn
-  ecr:
-    images:
-      appimage:
-        path: ./
-  s3:
-    publicBucket:
-      name: ${self:custom.bucketName}
-      publicAccessBlockConfiguration:
-        BlockPublicAcls: false
-      websiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: index.html
-      versioningConfiguration:
-        Status: Enabled
+  # s3:
+  #   bucketOne:
+  #     name: ${self:custom.bucketName}
+  #     publicAccessBlockConfiguration:
+  #       BlockPublicAcls: false
+  #     websiteConfiguration:
+  #       IndexDocument: index.html
+  #       ErrorDocument: index.html
+  #     versioningConfiguration:
+  #       Status: Enabled
+  iam:
+    role:
+      statements:
+        # Allow functions to list all buckets
+        - Effect: Allow
+          Action: 's3:ListBucket'
+          Resource: '*'
+        # Allow functions to read/write objects in a bucket
+        - Effect: Allow
+          Action:
+            - 's3:GetObject'
+            - 's3:PutObject'
+          Resource:
+            - 'arn:aws:s3:::${self:custom.bucketName}/uploads/*'
+        - Effect: "Allow"
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+          Resource:
+            "Fn::GetAtt":
+                - KeyValuesDynamoDBTable
+                - Arn
+      # ecr:
+      #   images:
+      #     appimage:
+      #       path: ./
+  
+
 
 functions:
   # upload image to the system
@@ -59,24 +85,13 @@ functions:
     handler: api.upload
     events:
       - http:
-          path: /
+          path: /upload
           method: POST
 
   # predict class of image
-  predict:
-    image:
-      name: appimage
-    timeout: 900
-    memorySize: 2048
-    events:
-      - s3:
-          bucket: ${self:custom.bucketName}
-          event: s3:ObjectCreated:*
-          rules:
-            - prefix: uploads/
-
   # predict:
-  #   handler: api.predict
+  #   image:
+  #     name: appimage
   #   timeout: 900
   #   memorySize: 2048
   #   events:
@@ -86,16 +101,43 @@ functions:
   #         rules:
   #           - prefix: uploads/
 
+  predict:
+    handler: api.predict
+    timeout: 900
+    memorySize: 2048
+    events:
+      - s3:
+          bucket: ${self:custom.bucketName}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+          existing: true
+
   # list all uploaded images
   list:
     handler: api.list
     events:
       - http:
-          path: /
+          path: /list
           method: GET
 
 resources:
   Resources:
+    PublicSite:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: ObjectWriter
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+        VersioningConfiguration:
+          Status: Enabled
+
     KeyValuesDynamoDBTable:
       Type: 'AWS::DynamoDB::Table'
       Properties:

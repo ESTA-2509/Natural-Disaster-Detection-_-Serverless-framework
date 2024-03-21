@@ -1,6 +1,10 @@
 {
   "devDependencies": {
     "serverless-better-credentials": "^2.0.0",
-    "serverless-dotenv-plugin": "^6.0.0"
+    "serverless-create-global-dynamodb-table": "^3.1.1",
+    "serverless-domain-manager": "^7.3.8",
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-s3-replication-plugin": "^1.1.0",
+    "serverless-s3-sync": "^3.3.0"
   }
 }
