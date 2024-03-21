@@ -10,7 +10,8 @@ plugins:
   - serverless-s3-replication-plugin
   - serverless-domain-manager
   - serverless-create-global-dynamodb-table
-  - serverless-python-requirements
+  # - serverless-python-requirements
+  - serverless-s3-sync
 
 custom:
   tableName: ${env:TABLE_NAME}
@@ -30,7 +31,7 @@ custom:
     createRoute53Record: true
   s3Sync:
     - bucketName: ${self:custom.bucketName}
-      localDir: dashboard/dist
+      localDir: ../dashboard/dist
   globalTables:
     regions:
       - us-east-1
@@ -88,12 +89,24 @@ functions:
   # upload image to the system
   upload:
     handler: api.upload
-    layers:
-      - Ref: PythonRequirementsLambdaLayer
+    # layers:
+    #   - Ref: PythonRequirementsLambdaLayer
     events:
       - http:
           path: /upload
           method: POST
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Amzn-Trace-Id
+            allowCredentials: false
+
 
   # predict class of image
   # predict:
@@ -123,12 +136,23 @@ functions:
   # list all uploaded images
   list:
     handler: api.list
-    layers:
-      - Ref: PythonRequirementsLambdaLayer
+    # layers:
+    #   - Ref: PythonRequirementsLambdaLayer
     events:
       - http:
           path: /list
           method: GET
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - X-Amzn-Trace-Id
+            allowCredentials: false
 
 resources:
   Resources:
@@ -146,6 +170,29 @@ resources:
           ErrorDocument: index.html
         VersioningConfiguration:
           Status: Enabled
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - "GET"
+                - "PUT"
+              AllowedOrigins:
+                - "*"
+
+    PublicSitePolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: PublicSite
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: "*"
+              Action:
+              - s3:GetObject
+              Resource: arn:aws:s3:::${self:custom.bucketName}/*
 
     KeyValuesDynamoDBTable:
       Type: 'AWS::DynamoDB::Table'
@@ -164,6 +211,43 @@ resources:
           WriteCapacityUnits: 1
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+
+    
+    WebAppCloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Origins:
+            - DomainName: ${self:custom.bucketName}.s3.amazonaws.com
+              Id: WebApp
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+          Enabled: 'true'
+          DefaultRootObject: index.html
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.html
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - DELETE
+              - GET
+              - HEAD
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            TargetOriginId: WebApp
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: 'true'
+
   Outputs:
     webServiceEndpoint:
       Value:

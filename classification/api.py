@@ -24,12 +24,12 @@ def upload(event, context):
   bucket_name = bucket + '-' + region
   try:
     data = json.loads(event['body'])
-    if not 'name' in data:
-      raise Exception('required name')
+    if not 'name' in data and not 'content_type' in data:
+      raise Exception('required name, content_type')
   except:
     return {
       'statusCode': 400,
-      'body': 'Invalid input data, must be json and have "name" attribute'
+      'body': 'Invalid input data, must be json and have "name" and "content_type" attribute'
     }
 
   print('upload', data['name'], 'file to', region)
@@ -37,8 +37,10 @@ def upload(event, context):
   response = s3.generate_presigned_url('put_object',
     Params={
       'Bucket': bucket_name,
-      'Key': data['name']
+      'Key': data['name'],
+      'ContentType': data['content_type']
     },
+    HttpMethod='PUT',
     ExpiresIn=3600
   )
 
