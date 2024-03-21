@@ -1,0 +1,8 @@
+# serverless-compose.yml
+services:
+  classification:
+    path: classification
+  iot-simulation:
+    path: iot-simulation
+    dependsOn:
+      - classification

@@ -1,0 +1,59 @@
+service: iot-simulation
+app: classification
+# org: hungngo22
+useDotenv: true
+frameworkVersion: "3"
+
+plugins:
+  - serverless-better-credentials
+  - serverless-dotenv-plugin
+  - serverless-python-requirements
+
+custom:
+  bucketName: ${env:BUCKET_NAME}
+  pythonRequirements:
+    dockerizePip: non-linux
+    layer: true
+
+
+provider:
+  name: aws
+  deploymentMethod: direct
+  profile: ${env:PROFILE_NAME}
+  runtime: python3.10
+  environment:
+    WEB_SERVICE_ENDPOINT:
+      'Fn::ImportValue': ${sls:stage}-webServiceEndpoint
+  iamRoleStatements:
+    # Allow functions to list all buckets
+    - Effect: Allow
+      Action: 's3:ListBucket'
+      Resource: '*'
+    # Allow functions to read/write objects in a bucket
+    - Effect: Allow
+      Action:
+        - 's3:GetObject'
+        - 's3:PutObject'
+      Resource:
+        - 'arn:aws:s3:::${self:custom.bucketName}/uploads/*'
+functions:
+  # upload image to the system
+  upload-image-simulation:
+    handler: handler.upload
+    layers:
+      - Ref: PythonRequirementsLambdaLayer
+    events:
+      - eventBridge:
+          schedule: rate(30 minutes)
+	
+resources: # CloudFormation template syntax
+  Resources:
+    Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+
+package:
+  exclude:
+    - node_modules/**
+
