@@ -55,6 +55,11 @@ def predict(image):
     return predicted_class
 
 def main(event, context):
+    print('The event:', event)
+    if 's3-replication' in event['Records'][0]['userIdentity']['principalId']:
+        print('ignore predict because of replication')
+        return
+
     # Your code here
     print("Processing S3 event:", event)
     bucket_name = event['Records'][0]['s3']['bucket']['name']

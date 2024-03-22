@@ -1,5 +1,5 @@
-service: classification
-app: classification
+service: dfsys-cls-1
+app: dfsys-cls-1
 # org: hungngo22
 useDotenv: true
 frameworkVersion: "3"
@@ -16,9 +16,9 @@ plugins:
 custom:
   tableName: ${env:TABLE_NAME}
   bucketName: ${env:BUCKET_NAME}-${opt:region}
-  pythonRequirements:
-    dockerizePip: non-linux
-    layer: true
+  # pythonRequirements:
+  #   dockerizePip: non-linux
+  #   layer: true
   s3ReplicationPlugin:
     bidirectionalReplicationBuckets:
       - us-east-1: ${env:BUCKET_NAME}-us-east-1
@@ -39,7 +39,7 @@ custom:
 
 provider:
   name: aws
-  deploymentMethod: direct
+  # deploymentMethod: direct
   profile: ${env:PROFILE_NAME}
   region: ${opt:region}
   endpointType: regional
@@ -78,10 +78,10 @@ provider:
             "Fn::GetAtt":
                 - KeyValuesDynamoDBTable
                 - Arn
-      # ecr:
-      #   images:
-      #     appimage:
-      #       path: ./
+  ecr:
+    images:
+      appimage:
+        path: ./
   
 
 
@@ -98,20 +98,9 @@ functions:
           cors: true
 
   # predict class of image
-  # predict:
-  #   image:
-  #     name: appimage
-  #   timeout: 900
-  #   memorySize: 2048
-  #   events:
-  #     - s3:
-  #         bucket: ${self:custom.bucketName}
-  #         event: s3:ObjectCreated:*
-  #         rules:
-  #           - prefix: uploads/
-
   predict:
-    handler: api.predict
+    image:
+      name: appimage
     timeout: 900
     memorySize: 2048
     events:
@@ -121,6 +110,18 @@ functions:
           rules:
             - prefix: uploads/
           existing: true
+
+  # predict:
+  #   handler: api.predict
+  #   timeout: 900
+  #   memorySize: 2048
+  #   events:
+  #     - s3:
+  #         bucket: ${self:custom.bucketName}
+  #         event: s3:ObjectCreated:*
+  #         rules:
+  #           - prefix: uploads/
+  #         existing: true
 
   # list all uploaded images
   list:
