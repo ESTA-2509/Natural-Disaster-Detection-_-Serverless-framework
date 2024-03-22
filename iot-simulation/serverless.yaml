@@ -7,10 +7,10 @@ frameworkVersion: "3"
 plugins:
   - serverless-better-credentials
   - serverless-dotenv-plugin
-  - serverless-python-requirements
+  # - serverless-python-requirements
 
 custom:
-  bucketName: ${env:BUCKET_NAME}
+  bucketName: ${env:BUCKET_NAME}-${opt:region}
   pythonRequirements:
     dockerizePip: non-linux
     layer: true
@@ -20,10 +20,12 @@ provider:
   name: aws
   deploymentMethod: direct
   profile: ${env:PROFILE_NAME}
+  region: ${opt:region}
+  endpointType: regional
   runtime: python3.10
-  environment:
-    WEB_SERVICE_ENDPOINT:
-      'Fn::ImportValue': ${sls:stage}-webServiceEndpoint
+  # environment:
+  #   WEB_SERVICE_ENDPOINT:
+  #     'Fn::ImportValue': ${sls:stage}-webServiceEndpoint
   iamRoleStatements:
     # Allow functions to list all buckets
     - Effect: Allow
@@ -40,12 +42,12 @@ functions:
   # upload image to the system
   upload-image-simulation:
     handler: handler.upload
-    layers:
-      - Ref: PythonRequirementsLambdaLayer
+    # layers:
+    #   - Ref: PythonRequirementsLambdaLayer
     events:
       - eventBridge:
           schedule: rate(30 minutes)
-	
+
 resources: # CloudFormation template syntax
   Resources:
     Bucket:

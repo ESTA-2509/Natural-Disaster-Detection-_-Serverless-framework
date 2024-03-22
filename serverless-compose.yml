@@ -2,7 +2,7 @@
 services:
   classification:
     path: classification
-  iot-simulation:
-    path: iot-simulation
-    dependsOn:
-      - classification
+  # iot-simulation:
+  #   path: iot-simulation
+  #   dependsOn:
+  #     - classification

@@ -46,7 +46,11 @@ def upload(event, context):
 
   return {
     'statusCode': 200,
-    'body': response
+    'body': response,
+    'headers': {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': True,
+    },
   }
 
 def predict(event, context):
@@ -95,6 +99,10 @@ def list(event, context):
 
   return {
     'statusCode': 200,
-    'body': json.dumps(response['Items'])
+    'body': json.dumps(response['Items']),
+    'headers': {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': True,
+    },
   }
 
